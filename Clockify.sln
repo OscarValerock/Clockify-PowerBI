@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{4DF76451-A46A-4C0B-BE03-459FAAFA07E6}") = "Clockify", "Clockify\Clockify.mproj", "{0A8C2589-D0E5-471F-97E7-FBF97C0712F5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Clockify Template PBIT", "Clockify Template PBIT", "{B5DE0D2D-5E4E-4603-A660-0DD57B36311F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
