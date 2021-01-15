@@ -24,7 +24,11 @@ let
             {"Workspaces","Workspaces",Clockify.Workspaces(),"Table","Table",true},
             {"Users","Users",Clockify.Users(),"Table","Table",true},
             {"Projects","Projects",Clockify.Projects(),"Table","Table",true},
-            {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true}
+            {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true},
+            {"Customers","Customers",Clockify.Customers(),"Table","Table",true},
+            {"Tags","Tags",Clockify.Tags(),"Table","Table",true},
+            {"Tasks","Tasks",Clockify.Tasks(),"Table","Table",true}
+
         }),
         NavTable = NavTable.to(objects,{"Key"},"Name","Data","ItemKind","ItemName","IsLeaf")
 in
@@ -144,6 +148,94 @@ let
     #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
 in
     #"Expanded timeInterval";
+
+Clockify.Customers =  () =>
+
+let
+
+    apiKey = Extension.CurrentCredential()[Key],
+    headers = [
+        #"X-Api-Key" = apiKey
+    ],
+    source = Clockify.Workspaces(),
+    customers = Table.AddColumn(
+        source,
+        "Projects",
+        each
+            Json.Document(
+                Web.Contents(
+                    baseurl,
+                    [
+                        RelativePath = "/workspaces/" & [Workspaces] &"/clients?page-size="&pagesize, 
+                        Headers = headers,
+                        ManualCredentials = true
+                    ]
+                )
+            )
+            ),
+    #"Expanded Customers" = Table.ExpandListColumn(customers, "Projects"),
+    #"Expanded Customers1" = Table.ExpandRecordColumn(#"Expanded Customers", "Projects", {"id", "name", "workspaceId", "archived", "address"}, {"Customer ID", "Customer Name", "Workspace ID", "Is Archived", "Address"})
+in
+    #"Expanded Customers1";
+
+Clockify.Tags =  () =>
+
+let
+
+    apiKey = Extension.CurrentCredential()[Key],
+    headers = [
+        #"X-Api-Key" = apiKey
+    ],
+    source = Clockify.Workspaces(),
+    tags = Table.AddColumn(
+        source,
+        "Tags",
+        each
+            Json.Document(
+                Web.Contents(
+                    baseurl,
+                    [
+                        RelativePath = "/workspaces/" & [Workspaces] &"/tags?page-size="&pagesize, 
+                        Headers = headers,
+                        ManualCredentials = true
+                    ]
+                )
+            )
+            ),
+    #"Expanded Customers" = Table.ExpandListColumn(tags, "Tags")
+in
+    #"Expanded Customers";
+
+Clockify.Tasks = () =>
+
+let
+
+    apiKey = Extension.CurrentCredential()[Key],
+    headers = [
+        #"X-Api-Key" = apiKey
+        ],
+    source = Clockify.Projects(),
+    selectcolumns = Table.SelectColumns(source,{"Workspace ID", "Project ID"}),
+    timeentries = Table.AddColumn(
+        selectcolumns,
+        "Tasks",
+        each
+            Json.Document(
+                Web.Contents(
+                    baseurl,
+                    [
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects/"&[Project ID]&"/tasks?page-size="&pagesize,
+                        Headers = headers,
+                        ManualCredentials = true
+                    ]
+                )
+            )
+            ),
+    #"Expanded Tasks" = Table.ExpandListColumn(timeentries, "Tasks"),
+    #"Expanded Tasks1" = Table.ExpandRecordColumn(#"Expanded Tasks", "Tasks", {"id", "name", "assigneeIds", "assigneeId", "estimate", "status", "duration"}, {"Task ID", "Task Name", "Assignee IDs", "Assignee ID", "Estimate", "Status", "Duration"}),
+    #"Filtered Rows" = Table.SelectRows(#"Expanded Tasks1", each ([Task ID] <> null))
+in
+    #"Filtered Rows";
 
 // Data Source Kind description
 Clockify = [
