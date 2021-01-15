@@ -34,7 +34,7 @@ For using the template (pbit) file, please follow the next steps:
 a. Get your API Key from the Clockify app. https://clockify.me/user/settings
 
 b. Download the pbit file from the linke below:
-   https://github.com/OscarValerock/Clockify-PowerBI/blob/master/Clockify-PBI-Template-PBIT/00%20Clockify%20-%20O.M.%20-      %20v1.61.pbit
+https://github.com/OscarValerock/Clockify-PowerBI/blob/master/Clockify-PBI-Template-PBIT/00%20Clockify%20-%20O.M.%20-%20v1.61.pbit
 
 c. Open the file, and enter the API key.
 
