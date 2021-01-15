@@ -20,7 +20,7 @@ For using the custom connector, please follow the next steps.
 a. Get your API Key from the Clockify app. https://clockify.me/user/settings
 
 b. Download the .mez file from here:
-   https://github.com/OscarValerock/Clockify-PowerBI/blob/master/Clockify.mez
+   https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify.mez
 
 c. Save the .mez file in the folder shown below:
    C:\Users\{Username}\Documents\Power BI Desktop\Custom Connectors
