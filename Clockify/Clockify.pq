@@ -25,7 +25,7 @@ let
             {"Users","Users",Clockify.Users(),"Table","Table",true},
             {"Projects","Projects",Clockify.Projects(),"Table","Table",true},
             {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true},
-            {"Customers","Customers",Clockify.Customers(),"Table","Table",true},
+            {"Clients","Clients",Clockify.Clients(),"Table","Table",true},
             {"Tags","Tags",Clockify.Tags(),"Table","Table",true},
             {"Tasks","Tasks",Clockify.Tasks(),"Table","Table",true}
 
@@ -35,7 +35,7 @@ in
         NavTable;
 
 // Data Tables
-Clockify.Workspaces = () =>
+shared Clockify.Workspaces = () =>
 let
     apiKey = Extension.CurrentCredential()[Key],
     headers = [
@@ -51,14 +51,10 @@ let
             ]
         )
     ),
-    Source1 = Source{0},
-    memberships = Source1[memberships],
-    #"Converted to Table" = Table.FromList(memberships, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
-    #"Expanded Column" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"targetId"}, {"Workspaces"}),
-    #"Removed Duplicates" = Table.Distinct(#"Expanded Column")
-
+    #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"id", "name", "hourlyRate", "memberships", "workspaceSettings", "imageUrl", "featureSubscriptionType"}, {"Workspace ID", "Workspace Name", "Workspace Hourly Rate", "Workspace Memberships", "Workspace Settings", "Workspace Image Url", "Workspace Feature Subscription Type"})
 in
-    #"Removed Duplicates";
+    #"Expanded Column1";
 
 Clockify.Users = () =>
 
@@ -76,7 +72,7 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Workspaces] &"/users?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/users?page-size="&pagesize, 
                         Headers = headers,
                          ManualCredentials = true
                     ]
@@ -105,7 +101,7 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Workspaces] &"/projects?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects?page-size="&pagesize, 
                         Headers = headers,
                         ManualCredentials = true
                     ]
@@ -113,7 +109,7 @@ let
             )
             ),
     #"Expanded Projects" = Table.ExpandListColumn(projects, "Projects"),
-    #"Expanded Projects1" = Table.ExpandRecordColumn(#"Expanded Projects", "Projects", {"id", "name", "hourlyRate", "clientId", "workspaceId", "billable", "memberships", "color", "estimate", "archived", "duration", "clientName", "note", "template", "public"}, {"Project ID", "Project Name", "Hourly Rate", "Clien tId", "Workspace ID", "Billable", "Memberships", "Color", "Estimate", "Archived", "Duration", "Client Name", "Note", "Template", "Public"})
+    #"Expanded Projects1" = Table.ExpandRecordColumn(#"Expanded Projects", "Projects", {"id", "name", "hourlyRate", "clientId", "workspaceId", "billable", "memberships", "color", "estimate", "archived", "duration", "clientName", "note", "template", "public"}, {"Project ID", "Project Name", "Hourly Rate", "Client ID", "Workspace ID2", "Billable", "Memberships", "Color", "Estimate", "Archived", "Duration", "Client Name", "Note", "Template", "Public"})
 
 
 in
@@ -127,7 +123,7 @@ let
         #"X-Api-Key" = apiKey
     ],
     source = Clockify.Users(),
-    #"Select Columns" = Table.SelectColumns(source,{"User ID","Active Workspace"}),
+    #"Select Columns" = Table.SelectColumns(source,{"User ID","Workspace ID"}),
     timeentries = Table.AddColumn(
         #"Select Columns",
         "Time Entries",
@@ -136,7 +132,7 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Active Workspace] &"/user/"&[User ID]&"/time-entries?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/user/"&[User ID]&"/time-entries?page-size="&pagesize, 
                         Headers = headers,
                         ManualCredentials = true
                     ]
@@ -144,12 +140,12 @@ let
             )
             ),
     #"Expanded Time Entries" = Table.ExpandListColumn(timeentries, "Time Entries"),
-    #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task Id", "Project Id", "Time Interval", "Workspace Id", "Is Locked", "Custom Fields"}),
+    #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Custom Fields"}),
     #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
 in
     #"Expanded timeInterval";
 
-Clockify.Customers =  () =>
+Clockify.Clients =  () =>
 
 let
 
@@ -166,7 +162,7 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Workspaces] &"/clients?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/clients?page-size="&pagesize, 
                         Headers = headers,
                         ManualCredentials = true
                     ]
@@ -174,7 +170,7 @@ let
             )
             ),
     #"Expanded Customers" = Table.ExpandListColumn(customers, "Projects"),
-    #"Expanded Customers1" = Table.ExpandRecordColumn(#"Expanded Customers", "Projects", {"id", "name", "workspaceId", "archived", "address"}, {"Customer ID", "Customer Name", "Workspace ID", "Is Archived", "Address"})
+    #"Expanded Customers1" = Table.ExpandRecordColumn(#"Expanded Customers", "Projects", {"id", "name", "workspaceId", "archived", "address"}, {"Client ID", "Client Name", "Workspace ID2", "Is Archived", "Address"})
 in
     #"Expanded Customers1";
 
@@ -195,16 +191,17 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Workspaces] &"/tags?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/tags?page-size="&pagesize, 
                         Headers = headers,
                         ManualCredentials = true
                     ]
                 )
             )
             ),
-    #"Expanded Customers" = Table.ExpandListColumn(tags, "Tags")
+    #"Expanded Tags" = Table.ExpandListColumn(tags, "Tags"),
+    #"Expanded Tags1" = Table.ExpandRecordColumn(#"Expanded Tags", "Tags", {"id", "name", "workspaceId", "archived"}, {"Tag ID", "Tag Name", "Workspace ID2", "Archived"})
 in
-    #"Expanded Customers";
+    #"Expanded Tags1";
 
 Clockify.Tasks = () =>
 
