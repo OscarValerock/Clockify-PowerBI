@@ -1,3 +1,5 @@
+# Inquiries please to oscar.mart@gmail.com
+
 # Clockify Power BI
 
 This repository contains two ways to getting data from Clockify into Power BI: through a (1) Custom connector or through a (2) Power BI template. For any of the methods you will need the following:
