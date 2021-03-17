@@ -1,4 +1,4 @@
-# Inquiries please to oscar.mart@gmail.com
+# Inquiries please to https://www.linkedin.com/in/oscarmartinezv/
 
 # Clockify Power BI
 
