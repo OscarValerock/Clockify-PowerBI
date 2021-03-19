@@ -46,3 +46,4 @@ Self-hosted Clockify users, you will need to (1) go through every query and in t
 
 ![](ReadMeImages/Self%20hosted%20users.png)
 
+--
