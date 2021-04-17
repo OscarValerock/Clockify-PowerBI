@@ -16,6 +16,7 @@ pagesize = "1000000";
 
 [DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 
+//
 // Navitagion Tables
 shared Clockify.Navigation = () as table =>
 let
@@ -33,6 +34,7 @@ let
 
         }),
         NavTable = NavTable.to(objects,{"Key"},"Name","Data","ItemKind","ItemName","IsLeaf")
+
 in
         NavTable;
 
