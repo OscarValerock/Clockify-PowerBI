@@ -27,9 +27,7 @@ let
             {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true},
             {"Clients","Clients",Clockify.Clients(),"Table","Table",true},
             {"Tags","Tags",Clockify.Tags(),"Table","Table",true},
-            {"Tasks","Tasks",Clockify.Tasks(),"Table","Table",true},
-            {"Custom Fields Workspaces","Custom Fields Workspaces",Clockify.CustomFieldsWorkspaces(),"Table","Table",true},
-            {"Custom Fields Projects","Custom Fields Projects",Clockify.CustomFieldsProjects(),"Table","Table",true}
+            {"Tasks","Tasks",Clockify.Tasks(),"Table","Table",true}
 
         }),
         NavTable = NavTable.to(objects,{"Key"},"Name","Data","ItemKind","ItemName","IsLeaf")
@@ -235,73 +233,6 @@ let
     #"Filtered Rows" = Table.SelectRows(#"Expanded Tasks1", each ([Task ID] <> null))
 in
     #"Filtered Rows";
-
-
-Clockify.CustomFieldsWorkspaces = () =>
-
-let
-
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    #"Custom Fields" = Table.AddColumn(
-        source,
-        "Custom Fields",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/custom-fields?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Custom Fields" = Table.ExpandListColumn(#"Custom Fields", "Custom Fields"),
-    #"Expanded Custom Fields1" = Table.ExpandRecordColumn(#"Expanded Custom Fields", "Custom Fields", {"id",  "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"}, {"Workspace Custom Field ID", "Workspace Custom Field Name", "Workspace Custom Field Description", "Workspace Custom Field Type", "Workspace Custom Field Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"})
-
-in
-
-#"Expanded Custom Fields1";
-
-
-Clockify.CustomFieldsProjects = () =>
-
-let
-
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-        ],
-    source = Clockify.Projects(),
-    selectcolumns = Table.SelectColumns(source,{"Workspace ID", "Project ID"}),
-    #"Custom Fields" = Table.AddColumn(
-        selectcolumns,
-        "Custom Fields",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects/"&[Project ID]&"/custom-fields?page-size="&pagesize,
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Custom Fields Project" = Table.ExpandListColumn(#"Custom Fields", "Custom Fields"),
-    #"Expanded Custom Fields Project1" = Table.ExpandRecordColumn(#"Expanded Custom Fields Project", "Custom Fields", 
-        {"id",  "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"}, 
-        {"Project Custom Field ID",  "Project Custom Field Name", "Project Custom Field Description", "Project Custom Field Type", "Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"})
-in
-     #"Expanded Custom Fields Project1" ;
-
-
 
 // Data Source Kind description
 Clockify = [
