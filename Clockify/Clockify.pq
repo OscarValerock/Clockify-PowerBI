@@ -24,6 +24,7 @@ let
             {"Name","Key","Data","ItemKind","ItemName","IsLeaf"},{
             {"Workspaces","Workspaces",Clockify.Workspaces(),"Table","Table",true},
             {"Users","Users",Clockify.Users(),"Table","Table",true},
+            {"User Groups","User Groups",Clockify.UserGroups(),"Table","Table",true},
             {"Projects","Projects",Clockify.Projects(),"Table","Table",true},
             {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true},
             {"Clients","Clients",Clockify.Clients(),"Table","Table",true},
@@ -68,8 +69,9 @@ let
         #"X-Api-Key" = apiKey
     ],
     source = Clockify.Workspaces(),
+    #"Select Columns" = Table.SelectColumns(source,{"Workspace ID"}),
     users = Table.AddColumn(
-        source,
+        #"Select Columns",
         "Users",
         each 
             Json.Document(
@@ -87,6 +89,40 @@ let
     #"Expanded Users1" = Table.ExpandRecordColumn(#"Expanded Users", "Users", {"id", "email", "name", "memberships", "profilePicture", "activeWorkspace", "defaultWorkspace", "settings", "status"}, {"User ID", "User Email", "User Name", "User Memberships", "Profile Picture", "Active Workspace", "Default Workspace", "Settings", "Status"})
 in
     #"Expanded Users1";
+
+
+Clockify.UserGroups = () =>
+
+let
+    apiKey = Extension.CurrentCredential()[Key],
+    headers = [
+        #"X-Api-Key" = apiKey
+    ],
+    source = Clockify.Workspaces(),
+    #"Select Columns" = Table.SelectColumns(source,{"Workspace ID"}),
+    Groups = Table.AddColumn(
+        #"Select Columns",
+        "Groups",
+        each 
+            Json.Document(
+                Web.Contents(
+                    baseurl,
+                    [
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/user-groups?page-size="&pagesize, 
+                        Headers = headers,
+                         ManualCredentials = true
+                    ]
+                )
+            )
+            ),
+    #"Expanded Groups" = Table.ExpandListColumn(Groups, "Groups"),
+    #"Expanded Groups1" = Table.ExpandRecordColumn(#"Expanded Groups", "Groups", {"id", "name", "userIds"}, {"User Group ID", "User Group Name", "User IDs"}),
+    #"Expanded userIds" = Table.ExpandListColumn(#"Expanded Groups1", "User IDs")
+in
+    #"Expanded userIds";
+
+
+
 
 Clockify.Projects  = () =>
 
