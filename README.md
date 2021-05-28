@@ -36,6 +36,8 @@ c. Save the .mez file in the folder shown below:
    
 d. Open Power BI Desktop and in the Get Data window search for the "Clockify" connector; when connecting you will be asked to enter the key.
 
+e. If you need to schedule refresh the dataset/report, you will need to do it through a gateway, you can find more information in the following link. https://docs.microsoft.com/en-us/power-bi/connect-data/service-gateway-custom-connectors
+
 # 2. Clockify template
 
 For using the template (pbit) file, please follow the next steps:
