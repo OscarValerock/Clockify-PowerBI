@@ -12,7 +12,7 @@
 section Clockify;
 
 baseurl = "https://api.clockify.me/api/v1";
-pagesize = "5000";
+pagesize = "1000";
 
 [DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 
@@ -40,7 +40,8 @@ in
         NavTable;
 
 // Data Tables
-shared Clockify.Workspaces = () =>
+[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
+Clockify.Workspaces = () =>
 let
     apiKey = Extension.CurrentCredential()[Key],
     headers = [
@@ -61,8 +62,8 @@ let
 in
     #"Expanded Column1";
 
+[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 Clockify.Users = () =>
-
 let
     apiKey = Extension.CurrentCredential()[Key],
     headers = [
@@ -90,9 +91,8 @@ let
 in
     #"Expanded Users1";
 
-
+[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 Clockify.UserGroups = () =>
-
 let
     apiKey = Extension.CurrentCredential()[Key],
     headers = [
@@ -121,13 +121,9 @@ let
 in
     #"Expanded userIds";
 
-
-
-
+[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 Clockify.Projects  = () =>
-
 let
-
     apiKey = Extension.CurrentCredential()[Key],
     headers = [
         #"X-Api-Key" = apiKey
@@ -150,40 +146,73 @@ let
             ),
     #"Expanded Projects" = Table.ExpandListColumn(projects, "Projects"),
     #"Expanded Projects1" = Table.ExpandRecordColumn(#"Expanded Projects", "Projects", {"id", "name", "hourlyRate", "clientId", "workspaceId", "billable", "memberships", "color", "estimate", "archived", "duration", "clientName", "note", "template", "public"}, {"Project ID", "Project Name", "Hourly Rate", "Client ID", "Workspace ID2", "Billable", "Memberships", "Color", "Estimate", "Archived", "Duration", "Client Name", "Note", "Template", "Public"})
-
-
 in
     #"Expanded Projects1";
 
+
+
+
+[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 Clockify.TimeEntries =  () =>
 
 let
-    apiKey = Extension.CurrentCredential()[Key],
+     apiKey = Extension.CurrentCredential()[Key],
     headers = [
         #"X-Api-Key" = apiKey
     ],
-    source = Clockify.Users(),
-    #"Select Columns" = Table.SelectColumns(source,{"User ID","Workspace ID"}),
-    timeentries = Table.AddColumn(
-        #"Select Columns",
-        "Time Entries",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/user/"&[User ID]&"/time-entries?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
+    Source = Clockify.Users(),
+    #"Select Columns" = Table.SelectColumns(Source,{"Workspace ID","User ID"}),
+
+    //Function to loop until a empty list is received
+
+        #"LoopFunction" = (WorspaceID as text, UserID as text) =>
+
+    let
+        Source =  List.Generate(
+            ()=> [
+                currentPage = 1, 
+                URL = Json.Document(
+                    Web.Contents(
+                        baseurl,
+                        [
+                            RelativePath = "/workspaces/"&WorspaceID&"/user/"&UserID&"/time-entries?page-size="&pagesize&"&page="&Number.ToText(currentPage), 
+                            Headers = headers,
+                            ManualCredentials = true
+                        ]
+                    )
                 )
-            )
-            ),
-    #"Expanded Time Entries" = Table.ExpandListColumn(timeentries, "Time Entries"),
+            ],
+            each List.IsEmpty([URL]) = false,
+            each[
+                    currentPage = [currentPage]+1,
+                    URL = Json.Document(
+                        Web.Contents(
+                            baseurl,
+                            [
+                                RelativePath = "/workspaces/"&WorspaceID&"/user/"&UserID&"/time-entries?page-size="&pagesize&"&page="&Number.ToText(currentPage), 
+                                Headers = headers,
+                                ManualCredentials = true
+                            ]
+                        )
+                    )
+
+                ]
+        )
+    
+    in
+        Source,
+
+
+    #"Invoked Custom Function" = Table.AddColumn(#"Select Columns", "New Column", each #"LoopFunction" ([Workspace ID], [User ID])),
+    #"Expanded New Column" = Table.ExpandListColumn(#"Invoked Custom Function", "New Column"),
+    #"Expanded New Column1" = Table.ExpandRecordColumn(#"Expanded New Column", "New Column", {"URL"}, {"Time Entries"}),
+    #"Expanded Time Entries" = Table.ExpandListColumn(#"Expanded New Column1", "Time Entries"),
     #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Custom Fields"}),
     #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
 in
     #"Expanded timeInterval";
+        
+
 
 Clockify.Clients =  () =>
 
