@@ -12,7 +12,7 @@
 section Clockify;
 
 baseurl = "https://api.clockify.me/api/v1";
-pagesize = "1000";
+pagesize = "5000";
 
 [DataSource.Kind="Clockify", Publish="Clockify.Publish"]
 
