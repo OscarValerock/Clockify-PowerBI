@@ -79,7 +79,7 @@ let
                 Web.Contents(
                     baseurl,
                     [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/users?page-size="&pagesize, 
+                        RelativePath = "/workspaces/" & [Workspace ID] &"/users?page-size="&pagesize & "memberships=ALL", 
                         Headers = headers,
                          ManualCredentials = true
                     ]
