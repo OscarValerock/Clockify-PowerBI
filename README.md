@@ -1,4 +1,6 @@
-# Inquiries please to https://www.linkedin.com/in/oscarmartinezv/
+# Inquiries please to 
+
+https://www.linkedin.com/in/oscarmartinezv/
 
 ## Medium Story
 
