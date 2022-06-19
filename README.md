@@ -66,8 +66,10 @@ b. Download the pbit file from the link below:
 https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify-PBI-Template-PBIT/Clockify%20v2.10.pbit
 
 c. Open the file, you will be asked for the API Key and a Page Size, for the
-`Page Size` parameter use an integer of `5000` or less, this is mostly important for the
-`Time Entries Table`. Use of the max value is recommended.
+`Page Size` parameter leave in `500`, this is mostly important for the
+`Time Entries Table`.
+
+`Detailed Report Start year` and `Detailed Report Start year` parameters, use the desired range of years.
 
 ## 2.1 Clockify template for self hosted Clockify users
 
