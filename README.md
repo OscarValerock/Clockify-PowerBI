@@ -1,4 +1,9 @@
-# Inquiries please to 
+
+
+# Clockify - Power BI Integration 
+![](ReadMeImages/CPBI.png)
+
+## Inquiries please to 
 
 https://www.linkedin.com/in/oscarmartinezv/
 
@@ -31,6 +36,8 @@ https://clockify.me/developers-api
 
 ## 1. Clockify Custom Connector
 
+![](ReadMeImages/mez.gif)
+
 For more information on Custom Connectors please visit: https://docs.microsoft.com/en-us/power-query/startingtodevelopcustomconnectors
 
 For using the custom connector, please follow the next steps.
@@ -49,12 +56,14 @@ e. If you need to schedule refresh the dataset/report, you will need to do it th
 
 ## 2. Clockify template
 
+![](ReadMeImages/pbit.png)
+
 For using the template (pbit) file, please follow the next steps:
 
 a. Get your API Key from the Clockify app. https://clockify.me/user/settings
 
 b. Download the pbit file from the link below:
-https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify-PBI-Template-PBIT/00%20Clockify%20-%20O.M.%20-%20v2.00.pbit
+https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify-PBI-Template-PBIT/Clockify%20v2.10.pbit
 
 c. Open the file, you will be asked for the API Key and a Page Size, for the
 `Page Size` parameter use an integer of `5000` or less, this is mostly important for the
