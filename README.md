@@ -1,4 +1,13 @@
-# Inquiries please to https://www.linkedin.com/in/oscarmartinezv/
+# Inquiries please to 
+
+https://www.linkedin.com/in/oscarmartinezv/
+
+## Medium Story
+
+If you want to know more about the connector, what you can learn from it, and it's development story, I invite you to read my Medium post. 
+
+https://oscarvalerock.medium.com/clockify-power-bi-template-589001f732b8
+
 
 ## Clockify Power BI
 
