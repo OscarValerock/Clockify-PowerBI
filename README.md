@@ -3,15 +3,16 @@
 # Clockify - Power BI Integration 
 ![](ReadMeImages/CPBI.png)
 
-## Inquiries please to 
-
-https://www.linkedin.com/in/oscarmartinezv/
+## Inquiries please open an issue:
+https://github.com/OscarValerock/Clockify-PowerBI/issues
 
 ## Medium Story
 
 If you want to know more about the connector, what you can learn from it, and it's development story, I invite you to read my Medium post. 
-
 https://oscarvalerock.medium.com/clockify-power-bi-template-589001f732b8
+
+##Searching for a developed Clockify report and model? 
+https://store.bibb.pro/l/clockify
 
 
 ## Clockify Power BI
