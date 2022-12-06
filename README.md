@@ -11,7 +11,8 @@ https://github.com/OscarValerock/Clockify-PowerBI/issues
 If you want to know more about the connector, what you can learn from it, and it's development story, I invite you to read my Medium post. 
 https://oscarvalerock.medium.com/clockify-power-bi-template-589001f732b8
 
-##Searching for a developed Clockify report and model? 
+## Searching for a developed Clockify report and model? 
+
 https://store.bibb.pro/l/clockify
 
 
