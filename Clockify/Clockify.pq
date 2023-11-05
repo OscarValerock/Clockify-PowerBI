@@ -372,6 +372,7 @@ in
 
 // Data Source Kind description
 Clockify = [
+    TestConnection = (dataSourcePath) => {"Clockify.Navigation"},
     Authentication = [
          Key = []
     ],
