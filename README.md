@@ -8,8 +8,8 @@ https://github.com/OscarValerock/Clockify-PowerBI/issues
 
 ## Medium Story
 
-If you want to know more about the connector, what you can learn from it, and it's development story, I invite you to read my Medium post. 
-https://oscarvalerock.medium.com/clockify-power-bi-template-589001f732b8
+If you want to know more about the connector, what you can learn from it, and its development story, I invite you to read my blog post:
+[https://www.bibb.pro/post/clockify-power-bi-template](https://www.bibb.pro/post/clockify-power-bi-template)
 
 ## Searching for a developed Clockify report and model? 
 
