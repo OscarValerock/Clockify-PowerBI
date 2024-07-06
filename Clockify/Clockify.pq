@@ -207,8 +207,11 @@ let
     #"Expanded New Column" = Table.ExpandListColumn(#"Invoked Custom Function", "New Column"),
     #"Expanded New Column1" = Table.ExpandRecordColumn(#"Expanded New Column", "New Column", {"URL"}, {"Time Entries"}),
     #"Expanded Time Entries" = Table.ExpandListColumn(#"Expanded New Column1", "Time Entries"),
-    #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Custom Fields"}),
-    #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
+    #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "hourlyRate", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Hourly Rate", "Custom Fields"}),
+    #"Expanded hourlyRate" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Hourly Rate", {"amount", "currency"}, {"Hourly Rate Amount", "Rate Currency"}),
+    #"Expanded hourlyRateTransformation" = Table.TransformColumns(#"Expanded hourlyRate", {{"Hourly Rate Amount", each _ / 100, type number}}),
+    #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded hourlyRateTransformation", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
+
 in
     #"Expanded timeInterval";
         
