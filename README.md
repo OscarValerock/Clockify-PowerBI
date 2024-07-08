@@ -38,7 +38,11 @@ https://clockify.me/developers-api
 
 ## 0. Wallkthrough video. 
 
-[https://github.com/OscarValerock/Clockify-PowerBI/assets/60475729/f9aaacdc-5c4c-4f26-bdea-53c849905f8d](url)
+[
+
+https://github.com/OscarValerock/Clockify-PowerBI/assets/60475729/f9aaacdc-5c4c-4f26-bdea-53c849905f8d
+
+](url)
 
 ## 1. Clockify Custom Connector
 
