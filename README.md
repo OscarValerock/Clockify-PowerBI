@@ -3,10 +3,10 @@
 # Clockify - Power BI Integration 
 ![](ReadMeImages/CPBI.png)
 
-## Inquiries please open an issue:
+## For inquiries please open an issue:
 https://github.com/OscarValerock/Clockify-PowerBI/issues
 
-## Medium Story
+## Blog Post
 
 If you want to know more about the connector, what you can learn from it, and its development story, I invite you to read my blog post:
 [https://www.bibb.pro/post/clockify-power-bi-template](https://www.bibb.pro/post/clockify-power-bi-template)
@@ -38,11 +38,7 @@ https://clockify.me/developers-api
 
 ## 0. Wallkthrough video. 
 
-[
-
 https://github.com/OscarValerock/Clockify-PowerBI/assets/60475729/f9aaacdc-5c4c-4f26-bdea-53c849905f8d
-
-](url)
 
 ## 1. Clockify Custom Connector
 
@@ -88,3 +84,6 @@ Self-hosted Clockify users, you will need to open the template and go through ev
 ![](ReadMeImages/Self%20hosted%20users.png)
 
 --
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTQ1MzEwMjk4OF19
+-->
