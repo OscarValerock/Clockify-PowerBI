@@ -12,6 +12,7 @@ If you want to know more about the connector, what you can learn from it, and it
 [https://www.bibb.pro/post/clockify-power-bi-template](https://www.bibb.pro/post/clockify-power-bi-template)
 
 ## Searching for a developed Clockify report and model? 
+Clockify - Power BI Template - Lifetime updates
 
 https://store.bibb.pro/l/clockify
 
@@ -85,5 +86,5 @@ Self-hosted Clockify users, you will need to open the template and go through ev
 
 --
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTQ1MzEwMjk4OF19
+eyJoaXN0b3J5IjpbMTUzMTM4MTMxXX0=
 -->
