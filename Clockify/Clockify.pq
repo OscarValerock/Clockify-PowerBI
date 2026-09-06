@@ -1,9 +1,6 @@
 // Clockify custom connector for Power BI
 // https://github.com/OscarValerock/Clockify-PowerBI
 // Created by Oscar Martinez (https://bit.ly/OscarMtzValero)
-//
-// 1.0 - consolidated to a single Clockify.Contents entry point, real pagination
-//       on every list endpoint, self-hosted URL support, 429 retry.
 
 section Clockify;
 
@@ -135,7 +132,7 @@ Clockify.Error = (r as record) as record =>
 
 //
 // ---------- entity functions ----------
-// Output column names are kept identical to the pre-1.0 connector.
+// Output column names are kept identical to the previous connector.
 //
 Workspaces = (base as text) as table =>
     let
@@ -220,7 +217,8 @@ TimeEntries = (base as text) as table =>
             {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "hourlyRate", "customFieldValues"},
             {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Hourly Rate", "Custom Fields"}
         ),
-        expandedRate = Table.ExpandRecordColumn(expanded, "Hourly Rate", {"amount", "currency"}, {"Hourly Rate Amount", "Rate Currency"}),
+        filtered = Table.SelectRows(expanded, each [Time Entry ID] <> null),
+        expandedRate = Table.ExpandRecordColumn(filtered, "Hourly Rate", {"amount", "currency"}, {"Hourly Rate Amount", "Rate Currency"}),
         transformedRate = Table.TransformColumns(expandedRate, {{"Hourly Rate Amount", each _ / 100, type number}}),
         expandedInterval = Table.ExpandRecordColumn(transformedRate, "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
     in
