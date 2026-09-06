@@ -1,6 +1,4 @@
-
-
-# Clockify - Power BI Integration 
+# Clockify - Power BI Integration
 ![](ReadMeImages/CPBI.png)
 
 ## For inquiries please open an issue:
@@ -11,80 +9,84 @@ https://github.com/OscarValerock/Clockify-PowerBI/issues
 If you want to know more about the connector, what you can learn from it, and its development story, I invite you to read my blog post:
 [https://www.bibb.pro/post/clockify-power-bi-template](https://www.bibb.pro/post/clockify-power-bi-template)
 
-## Searching for a developed Clockify report and model? 
+## Searching for a developed Clockify report and model?
 Clockify - Power BI Template - Lifetime updates
 
 https://store.bibb.pro/l/clockify
 
+## What you need
 
-## Clockify Power BI
+A Clockify account: https://clockify.me/signup
 
-This repository contains two ways to getting data from Clockify into Power BI:
+An API key: https://clockify.me/user/settings
 
-(1) Custom connector
-(2) Power BI template.
+Clockify API documentation: https://clockify.me/developers-api
 
-## For any of the methods you will need the following
-
-A clockify account:
-https://clockify.me/signup
-
-Once you have the account, you will need the API Key.
-
-An API Key
-https://clockify.me/user/settings
-
-If you need more info from the API, here is the link to the documentation.
-https://clockify.me/developers-api
-
-## 0. Wallkthrough video. 
+## Walkthrough video
 
 https://github.com/OscarValerock/Clockify-PowerBI/assets/60475729/f9aaacdc-5c4c-4f26-bdea-53c849905f8d
 
-## 1. Clockify Custom Connector
+## Clockify Custom Connector
 
 ![](ReadMeImages/mez.gif)
 
-For more information on Custom Connectors please visit: https://docs.microsoft.com/en-us/power-query/startingtodevelopcustomconnectors
+For more information on custom connectors: https://learn.microsoft.com/power-query/startingtodevelopcustomconnectors
 
-For using the custom connector, please follow the next steps.
+### Install
 
-a. Get your API Key from the Clockify app. https://clockify.me/user/settings
+a. Get your API key from the Clockify app: https://clockify.me/user/settings
 
-b. Download the .mez file from here:
+b. Download the `.mez` file:
 https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify.mez
 
-c. Save the .mez file in the folder shown below:
-C:\Users\{Username}\Documents\Power BI Desktop\Custom Connectors
+c. Save it in:
+`C:\Users\{Username}\Documents\Power BI Desktop\Custom Connectors`
 
-d. Open Power BI Desktop and in the Get Data window search for the "Clockify" connector; when connecting you will be asked to enter the key.
+d. In Power BI Desktop, **File > Options and settings > Options > Security > Data Extensions**, allow any extension to load.
 
-e. If you need to schedule refresh the dataset/report, you will need to do it through a gateway, you can find more information in the following link. https://docs.microsoft.com/en-us/power-bi/connect-data/service-gateway-custom-connectors
+e. Restart Power BI Desktop. **Get Data**, search for **Clockify**, and connect with your API key.
 
-## 2. Clockify template
+f. To schedule refresh, you need an on-premises data gateway:
+https://learn.microsoft.com/power-bi/connect-data/service-gateway-custom-connectors
 
-![](ReadMeImages/pbit.png)
+### Using the connector
 
-For using the template (pbit) file, please follow the next steps:
+The connector exposes a single function, **`Clockify.Contents`**, which returns a
+navigation table with:
 
-a. Get your API Key from the Clockify app. https://clockify.me/user/settings
+`Workspaces`, `Users`, `User Groups`, `Projects`, `Time Entries`, `Clients`,
+`Tags`, `Tasks`, `Custom Fields Workspaces`, `Custom Fields Projects`.
 
-b. Download the pbit file from the link below:
-https://github.com/OscarValerock/Clockify-PowerBI/raw/master/Clockify-PBI-Template-PBIT/Clockify%20v2.10.pbit
+Pick tables from the navigator - no parameters are needed for Clockify cloud.
 
-c. Open the file, you will be asked for the API Key and a Page Size, for the
-`Page Size` parameter leave in `500`, this is mostly important for the
-`Time Entries Table`.
+### Self-hosted Clockify
 
-`Detailed Report Start year` and `Detailed Report Start year` parameters, use the desired range of years.
+`Clockify.Contents` takes an optional **API URL**. Leave it blank for the
+Clockify cloud, or enter your full API base URL (the same host you log in to,
+plus `/api/v1`), e.g. `https://clockify.example.com/api/v1`.
 
-## 2.1 Clockify template for self hosted Clockify users
+## Known limitations
 
-Self-hosted Clockify users, you will need to open the template and go through every query and in the advanced editor and change the URL to your server connection detail where you have Clockify installed, it is the same URL that you use to log in.
+- **Time Entries** are pulled per user, one page at a time. On large workspaces
+  this is the slow part of a refresh. A faster bulk pull (Reports API) and
+  incremental refresh are in the paid template: https://store.bibb.pro/l/clockify
+- `Workspaces` is fetched again by several downstream tables (`Projects`,
+  `Clients`, `Tags`, custom fields). Minor redundant calls.
+- One credential is shared across the cloud and any self-hosted URL.
 
-![](ReadMeImages/Self%20hosted%20users.png)
+## Release notes
 
---
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbMTUzMTM4MTMxXX0=
--->
+### 1.0
+
+- **Breaking:** consolidated the ten `Clockify.*` functions into a single
+  `Clockify.Contents` entry point. After upgrading, re-connect through the
+  navigator and repoint existing queries.
+- Fixed pagination on **every** list endpoint. Previously only Time Entries
+  paginated; the other tables fired a single oversized request and silently
+  dropped rows past Clockify's page cap.
+- Added self-hosted Clockify support via an optional API URL.
+- Added automatic retry with backoff on HTTP 429 (rate limit).
+- Clearer error messages for bad or unauthorized API keys.
+- Migrated the build to the VS Code Power Query SDK.
+- Removed the `.pbit` template from this repo. The maintained report and model
+  are the paid template: https://store.bibb.pro/l/clockify

@@ -3,6 +3,13 @@
 Working doc for the `feat/connector-modernize` branch. A second agent executes
 this in the Power Query SDK window; the repo owner drives the build/test loop.
 
+**Status (2026-09-06):** TASK 1 done + committed (`08a57e9`). TASK 2 connector
+rewrite done — new `Clockify.pq` builds via MakePQX, `Clockify.Contents()` returns
+the 10-entity nav table, entities expand, and it loads in Power BI Desktop.
+Repo cleanup done (`.pbit` + template README sections removed, `resources.resx`
+tightened). Pagination proof against a >200-row workspace still to be run by the
+owner. Owner copies the built `.mez` to the repo root and opens the PR.
+
 ## Context
 
 `OscarValerock/Clockify-PowerBI` is the free-tier companion to the paid bibb.pro

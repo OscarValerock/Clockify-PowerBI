@@ -1,404 +1,351 @@
-﻿///////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////
-/////////////                                                                 /////////////
-/////////////    Title: Clockify API Connector for Power BI                   /////////////
-/////////////    Created by: Oscar Martinez (https://bit.ly/OscarMtzValero)   /////////////
-/////////////    Website: https://bit.ly/OscarMartinez-GitHub                 /////////////
-/////////////                                                                 /////////////
-///////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////
+// Clockify custom connector for Power BI
+// https://github.com/OscarValerock/Clockify-PowerBI
+// Created by Oscar Martinez (https://bit.ly/OscarMtzValero)
+//
+// 1.0 - consolidated to a single Clockify.Contents entry point, real pagination
+//       on every list endpoint, self-hosted URL support, 429 retry.
 
-// This file contains your Data Connector logic
 section Clockify;
 
-baseurl = "https://api.clockify.me/api/v1";
-pagesize = "5000";
-
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
+DefaultBaseUrl = "https://api.clockify.me/api/v1";
+DefaultPageSize = 200; // safe for every Clockify list endpoint
 
 //
-// Navitagion Tables
-shared Clockify.Navigation = () as table =>
-let
-        objects = #table(
-            {"Name","Key","Data","ItemKind","ItemName","IsLeaf"},{
-            {"Workspaces","Workspaces",Clockify.Workspaces(),"Table","Table",true},
-            {"Users","Users",Clockify.Users(),"Table","Table",true},
-            {"User Groups","User Groups",Clockify.UserGroups(),"Table","Table",true},
-            {"Projects","Projects",Clockify.Projects(),"Table","Table",true},
-            {"Time Entries","Time Entries",Clockify.TimeEntries(),"Table","Table",true},
-            {"Clients","Clients",Clockify.Clients(),"Table","Table",true},
-            {"Tags","Tags",Clockify.Tags(),"Table","Table",true},
-            {"Tasks","Tasks",Clockify.Tasks(),"Table","Table",true},
-            {"Custom Fields Workspaces","Custom Fields Workspaces",Clockify.CustomFieldsWorkspaces(),"Table","Table",true},
-            {"Custom Fields Projects","Custom Fields Projects",Clockify.CustomFieldsProjects(),"Table","Table",true}
+// ---------- entry point ----------
+//
+[DataSource.Kind = "Clockify", Publish = "Clockify.Publish"]
+shared Clockify.Contents = Value.ReplaceType(ClockifyImpl, ClockifyType);
 
-        }),
-        NavTable = NavTable.to(objects,{"Key"},"Name","Data","ItemKind","ItemName","IsLeaf")
+ClockifyType = type function (
+    optional url as (type text meta [
+        Documentation.FieldCaption = "API URL",
+        Documentation.FieldDescription = "Leave blank for the Clockify cloud. For a self-hosted Clockify, enter the full API base URL, e.g. https://clockify.example.com/api/v1",
+        Documentation.SampleValues = {DefaultBaseUrl}
+    ]))
+    as table meta [
+        Documentation.Name = "Clockify"
+    ];
 
-in
-        NavTable;
-
-// Data Tables
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
-Clockify.Workspaces = () =>
-let
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    Source = Json.Document(
-        Web.Contents(
-            baseurl,
-            [
-                RelativePath = "/workspaces", 
-                Headers=headers,
-                ManualCredentials = true
-            ]
-        )
-    ),
-    #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
-    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"id", "name", "hourlyRate", "memberships", "workspaceSettings", "imageUrl", "featureSubscriptionType"}, {"Workspace ID", "Workspace Name", "Workspace Hourly Rate", "Workspace Memberships", "Workspace Settings", "Workspace Image Url", "Workspace Feature Subscription Type"})
-in
-    #"Expanded Column1";
-
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
-Clockify.Users = () =>
-let
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    #"Select Columns" = Table.SelectColumns(source,{"Workspace ID"}),
-    users = Table.AddColumn(
-        #"Select Columns",
-        "Users",
-        each 
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/users?page-size="&pagesize & "&memberships=ALL", 
-                        Headers = headers,
-                         ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Users" = Table.ExpandListColumn(users, "Users"),
-    #"Expanded Users1" = Table.ExpandRecordColumn(#"Expanded Users", "Users", {"id", "email", "name", "memberships", "profilePicture", "activeWorkspace", "defaultWorkspace", "settings", "status"}, {"User ID", "User Email", "User Name", "User Memberships", "Profile Picture", "Active Workspace", "Default Workspace", "Settings", "Status"})
-in
-    #"Expanded Users1";
-
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
-Clockify.UserGroups = () =>
-let
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    #"Select Columns" = Table.SelectColumns(source,{"Workspace ID"}),
-    Groups = Table.AddColumn(
-        #"Select Columns",
-        "Groups",
-        each 
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/user-groups?page-size="&pagesize, 
-                        Headers = headers,
-                         ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Groups" = Table.ExpandListColumn(Groups, "Groups"),
-    #"Expanded Groups1" = Table.ExpandRecordColumn(#"Expanded Groups", "Groups", {"id", "name", "userIds"}, {"User Group ID", "User Group Name", "User IDs"}),
-    #"Expanded userIds" = Table.ExpandListColumn(#"Expanded Groups1", "User IDs")
-in
-    #"Expanded userIds";
-
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
-Clockify.Projects  = () =>
-let
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    projects = Table.AddColumn(
-        source,
-        "Projects",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Projects" = Table.ExpandListColumn(projects, "Projects"),
-    #"Expanded Projects1" = Table.ExpandRecordColumn(#"Expanded Projects", "Projects", {"id", "name", "hourlyRate", "clientId", "workspaceId", "billable", "memberships", "color", "estimate", "archived", "duration", "clientName", "note", "template", "public"}, {"Project ID", "Project Name", "Hourly Rate", "Client ID", "Workspace ID2", "Billable", "Memberships", "Color", "Estimate", "Archived", "Duration", "Client Name", "Note", "Template", "Public"})
-in
-    #"Expanded Projects1";
-
-
-
-
-[DataSource.Kind="Clockify", Publish="Clockify.Publish"]
-Clockify.TimeEntries =  () =>
-
-let
-     apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    Source = Clockify.Users(),
-    #"Select Columns" = Table.SelectColumns(Source,{"Workspace ID","User ID"}),
-
-    //Function to loop until a empty list is received
-
-        #"LoopFunction" = (WorspaceID as text, UserID as text) =>
-
+ClockifyImpl = (optional url as text) as table =>
     let
-        Source =  List.Generate(
-            ()=> [
-                currentPage = 1, 
-                URL = Json.Document(
-                    Web.Contents(
-                        baseurl,
-                        [
-                            RelativePath = "/workspaces/"&WorspaceID&"/user/"&UserID&"/time-entries?page-size="&pagesize&"&page="&Number.ToText(currentPage), 
-                            Headers = headers,
-                            ManualCredentials = true
-                        ]
-                    )
-                )
-            ],
-            each List.IsEmpty([URL]) = false,
-            each[
-                    currentPage = [currentPage]+1,
-                    URL = Json.Document(
-                        Web.Contents(
-                            baseurl,
-                            [
-                                RelativePath = "/workspaces/"&WorspaceID&"/user/"&UserID&"/time-entries?page-size="&pagesize&"&page="&Number.ToText(currentPage), 
-                                Headers = headers,
-                                ManualCredentials = true
-                            ]
-                        )
-                    )
-
-                ]
-        )
-    
+        base = if url = null or url = "" then DefaultBaseUrl else url
     in
-        Source,
+        NavTable(base);
 
+//
+// ---------- navigation table ----------
+//
+NavTable = (base as text) as table =>
+    let
+        objects = #table(
+            {"Name", "Key", "Data", "ItemKind", "ItemName", "IsLeaf"},
+            {
+                {"Workspaces", "Workspaces", Workspaces(base), "Table", "Table", true},
+                {"Users", "Users", Users(base), "Table", "Table", true},
+                {"User Groups", "User Groups", UserGroups(base), "Table", "Table", true},
+                {"Projects", "Projects", Projects(base), "Table", "Table", true},
+                {"Time Entries", "Time Entries", TimeEntries(base), "Table", "Table", true},
+                {"Clients", "Clients", Clients(base), "Table", "Table", true},
+                {"Tags", "Tags", Tags(base), "Table", "Table", true},
+                {"Tasks", "Tasks", Tasks(base), "Table", "Table", true},
+                {"Custom Fields Workspaces", "Custom Fields Workspaces", CustomFieldsWorkspaces(base), "Table", "Table", true},
+                {"Custom Fields Projects", "Custom Fields Projects", CustomFieldsProjects(base), "Table", "Table", true}
+            }
+        ),
+        navTable = Table.ToNavigationTable(objects, {"Key"}, "Name", "Data", "ItemKind", "ItemName", "IsLeaf")
+    in
+        navTable;
 
-    #"Invoked Custom Function" = Table.AddColumn(#"Select Columns", "New Column", each #"LoopFunction" ([Workspace ID], [User ID])),
-    #"Expanded New Column" = Table.ExpandListColumn(#"Invoked Custom Function", "New Column"),
-    #"Expanded New Column1" = Table.ExpandRecordColumn(#"Expanded New Column", "New Column", {"URL"}, {"Time Entries"}),
-    #"Expanded Time Entries" = Table.ExpandListColumn(#"Expanded New Column1", "Time Entries"),
-    #"Expanded Time Entries1" = Table.ExpandRecordColumn(#"Expanded Time Entries", "Time Entries", {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "hourlyRate", "customFieldValues"}, {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Hourly Rate", "Custom Fields"}),
-    #"Expanded hourlyRate" = Table.ExpandRecordColumn(#"Expanded Time Entries1", "Hourly Rate", {"amount", "currency"}, {"Hourly Rate Amount", "Rate Currency"}),
-    #"Expanded hourlyRateTransformation" = Table.TransformColumns(#"Expanded hourlyRate", {{"Hourly Rate Amount", each _ / 100, type number}}),
-    #"Expanded timeInterval" = Table.ExpandRecordColumn(#"Expanded hourlyRateTransformation", "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
+//
+// ---------- request + pagination helpers (the core of the fix) ----------
+//
+Clockify.Request = (base as text, path as text, optional query as record) as record =>
+    let
+        response = Web.Contents(base, [
+            RelativePath = path,
+            Query = query ?? [],
+            Headers = [#"X-Api-Key" = Extension.CurrentCredential()[Key]],
+            ManualStatusHandling = {400, 401, 403, 404, 429, 500, 502, 503},
+            ManualCredentials = true
+        ]),
+        buffered = Binary.Buffer(response),
+        responseMeta = Value.Metadata(response),
+        headers = try responseMeta[Headers] otherwise []
+    in
+        [Status = responseMeta[Response.Status], Headers = headers, Body = buffered];
 
-in
-    #"Expanded timeInterval";
-        
+// exponential backoff on 429: 1s, 2s, 4s, 8s, 16s
+Clockify.RequestRetry = (base as text, path as text, optional query as record) as record =>
+    let
+        attempt = (n as number) as record =>
+            let
+                r = Clockify.Request(base, path, query)
+            in
+                if r[Status] = 429 and n < 5 then
+                    Function.InvokeAfter(() => @attempt(n + 1), #duration(0, 0, 0, Number.Power(2, n)))
+                else
+                    r
+    in
+        attempt(0);
 
+// loop pages until the Last-Page response header is "true", a short page, or an empty page
+Clockify.GetList = (base as text, path as text, optional query as record) as list =>
+    let
+        fetch = (n as number, acc as list) as list =>
+            let
+                pageQuery = Record.Combine({
+                    query ?? [],
+                    [#"page" = Text.From(n), #"page-size" = Text.From(DefaultPageSize)]
+                }),
+                r = Clockify.RequestRetry(base, path, pageQuery),
+                items =
+                    if r[Status] >= 400 then
+                        error Clockify.Error(r)
+                    else
+                        let parsed = Json.Document(r[Body]) in
+                            if parsed is list then parsed else {},
+                    lastByHeader = try Text.Lower(Record.FieldOrDefault(r[Headers], "Last-Page", "")) = "true" otherwise false,
+                    lastBySize = List.Count(items) < DefaultPageSize,
+                    acc2 = acc & items
+            in
+                if List.IsEmpty(items) or lastByHeader or lastBySize then acc2 else @fetch(n + 1, acc2)
+    in
+        fetch(1, {});
 
-Clockify.Clients =  () =>
+Clockify.Error = (r as record) as record =>
+    let
+        body = try Text.FromBinary(r[Body]) otherwise "",
+        status = r[Status]
+    in
+        [
+            Reason = "DataSource.Error",
+            Message =
+                if status = 401 then
+                    "Clockify rejected the API key (401). Check your saved credential."
+                else if status = 403 then
+                    "Clockify denied access (403). The API key may lack permission for this workspace or endpoint."
+                else if status = 404 then
+                    "Clockify resource not found (404). " & body
+                else if status = 429 then
+                    "Clockify rate limit hit (429); retries exhausted. Try the refresh again later."
+                else
+                    "Clockify request failed (" & Text.From(status) & "). " & body,
+            Detail = body
+        ];
 
-let
+//
+// ---------- entity functions ----------
+// Output column names are kept identical to the pre-1.0 connector.
+//
+Workspaces = (base as text) as table =>
+    let
+        source = Clockify.GetList(base, "/workspaces"),
+        toTable = Table.FromList(source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+        expanded = Table.ExpandRecordColumn(
+            toTable,
+            "Column1",
+            {"id", "name", "hourlyRate", "memberships", "workspaceSettings", "imageUrl", "featureSubscriptionType"},
+            {"Workspace ID", "Workspace Name", "Workspace Hourly Rate", "Workspace Memberships", "Workspace Settings", "Workspace Image Url", "Workspace Feature Subscription Type"}
+        )
+    in
+        expanded;
 
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    customers = Table.AddColumn(
-        source,
-        "Projects",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/clients?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Customers" = Table.ExpandListColumn(customers, "Projects"),
-    #"Expanded Customers1" = Table.ExpandRecordColumn(#"Expanded Customers", "Projects", {"id", "name", "workspaceId", "archived", "address"}, {"Client ID", "Client Name", "Workspace ID2", "Is Archived", "Address"})
-in
-    #"Expanded Customers1";
+Users = (base as text) as table =>
+    let
+        source = Table.SelectColumns(Workspaces(base), {"Workspace ID"}),
+        withUsers = Table.AddColumn(
+            source,
+            "Users",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/users", [memberships = "ALL"])
+        ),
+        expandedList = Table.ExpandListColumn(withUsers, "Users"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Users",
+            {"id", "email", "name", "memberships", "profilePicture", "activeWorkspace", "defaultWorkspace", "settings", "status"},
+            {"User ID", "User Email", "User Name", "User Memberships", "Profile Picture", "Active Workspace", "Default Workspace", "Settings", "Status"}
+        )
+    in
+        expanded;
 
-Clockify.Tags =  () =>
+UserGroups = (base as text) as table =>
+    let
+        source = Table.SelectColumns(Workspaces(base), {"Workspace ID"}),
+        withGroups = Table.AddColumn(
+            source,
+            "Groups",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/user-groups")
+        ),
+        expandedList = Table.ExpandListColumn(withGroups, "Groups"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Groups",
+            {"id", "name", "userIds"},
+            {"User Group ID", "User Group Name", "User IDs"}
+        ),
+        expandedIds = Table.ExpandListColumn(expanded, "User IDs")
+    in
+        expandedIds;
 
-let
+Projects = (base as text) as table =>
+    let
+        source = Workspaces(base),
+        withProjects = Table.AddColumn(
+            source,
+            "Projects",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/projects")
+        ),
+        expandedList = Table.ExpandListColumn(withProjects, "Projects"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Projects",
+            {"id", "name", "hourlyRate", "clientId", "workspaceId", "billable", "memberships", "color", "estimate", "archived", "duration", "clientName", "note", "template", "public"},
+            {"Project ID", "Project Name", "Hourly Rate", "Client ID", "Workspace ID2", "Billable", "Memberships", "Color", "Estimate", "Archived", "Duration", "Client Name", "Note", "Template", "Public"}
+        )
+    in
+        expanded;
 
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    tags = Table.AddColumn(
-        source,
-        "Tags",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/tags?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Tags" = Table.ExpandListColumn(tags, "Tags"),
-    #"Expanded Tags1" = Table.ExpandRecordColumn(#"Expanded Tags", "Tags", {"id", "name", "workspaceId", "archived"}, {"Tag ID", "Tag Name", "Workspace ID2", "Archived"})
-in
-    #"Expanded Tags1";
+TimeEntries = (base as text) as table =>
+    let
+        source = Table.SelectColumns(Users(base), {"Workspace ID", "User ID"}),
+        withEntries = Table.AddColumn(
+            source,
+            "Time Entries",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/user/" & [User ID] & "/time-entries")
+        ),
+        expandedList = Table.ExpandListColumn(withEntries, "Time Entries"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Time Entries",
+            {"id", "description", "tagIds", "billable", "taskId", "projectId", "timeInterval", "workspaceId", "isLocked", "hourlyRate", "customFieldValues"},
+            {"Time Entry ID", "Description", "Tags IDs", "Billable", "Task ID", "Project ID", "Time Interval", "Workspace ID2", "Is Locked", "Hourly Rate", "Custom Fields"}
+        ),
+        expandedRate = Table.ExpandRecordColumn(expanded, "Hourly Rate", {"amount", "currency"}, {"Hourly Rate Amount", "Rate Currency"}),
+        transformedRate = Table.TransformColumns(expandedRate, {{"Hourly Rate Amount", each _ / 100, type number}}),
+        expandedInterval = Table.ExpandRecordColumn(transformedRate, "Time Interval", {"start", "end", "duration"}, {"Interval Start", "Interval End", "Interval Duration"})
+    in
+        expandedInterval;
 
-Clockify.Tasks = () =>
+Clients = (base as text) as table =>
+    let
+        source = Workspaces(base),
+        withClients = Table.AddColumn(
+            source,
+            "Clients",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/clients")
+        ),
+        expandedList = Table.ExpandListColumn(withClients, "Clients"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Clients",
+            {"id", "name", "workspaceId", "archived", "address"},
+            {"Client ID", "Client Name", "Workspace ID2", "Is Archived", "Address"}
+        )
+    in
+        expanded;
 
-let
+Tags = (base as text) as table =>
+    let
+        source = Workspaces(base),
+        withTags = Table.AddColumn(
+            source,
+            "Tags",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/tags")
+        ),
+        expandedList = Table.ExpandListColumn(withTags, "Tags"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Tags",
+            {"id", "name", "workspaceId", "archived"},
+            {"Tag ID", "Tag Name", "Workspace ID2", "Archived"}
+        )
+    in
+        expanded;
 
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-        ],
-    source = Clockify.Projects(),
-    selectcolumns = Table.SelectColumns(source,{"Workspace ID", "Project ID"}),
-    timeentries = Table.AddColumn(
-        selectcolumns,
-        "Tasks",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects/"&[Project ID]&"/tasks?page-size="&pagesize,
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Tasks" = Table.ExpandListColumn(timeentries, "Tasks"),
-    #"Expanded Tasks1" = Table.ExpandRecordColumn(#"Expanded Tasks", "Tasks", {"id", "name", "assigneeIds", "assigneeId", "estimate", "status", "duration"}, {"Task ID", "Task Name", "Assignee IDs", "Assignee ID", "Estimate", "Status", "Duration"}),
-    #"Filtered Rows" = Table.SelectRows(#"Expanded Tasks1", each ([Task ID] <> null))
-in
-    #"Filtered Rows";
+Tasks = (base as text) as table =>
+    let
+        source = Table.SelectColumns(Projects(base), {"Workspace ID", "Project ID"}),
+        withTasks = Table.AddColumn(
+            source,
+            "Tasks",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/projects/" & [Project ID] & "/tasks")
+        ),
+        expandedList = Table.ExpandListColumn(withTasks, "Tasks"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Tasks",
+            {"id", "name", "assigneeIds", "assigneeId", "estimate", "status", "duration"},
+            {"Task ID", "Task Name", "Assignee IDs", "Assignee ID", "Estimate", "Status", "Duration"}
+        ),
+        filtered = Table.SelectRows(expanded, each [Task ID] <> null)
+    in
+        filtered;
 
+CustomFieldsWorkspaces = (base as text) as table =>
+    let
+        source = Workspaces(base),
+        withFields = Table.AddColumn(
+            source,
+            "Custom Fields",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/custom-fields")
+        ),
+        expandedList = Table.ExpandListColumn(withFields, "Custom Fields"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Custom Fields",
+            {"id", "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"},
+            {"Workspace Custom Field ID", "Workspace Custom Field Name", "Workspace Custom Field Description", "Workspace Custom Field Type", "Workspace Custom Field Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"}
+        )
+    in
+        expanded;
 
-Clockify.CustomFieldsWorkspaces = () =>
+CustomFieldsProjects = (base as text) as table =>
+    let
+        source = Table.SelectColumns(Projects(base), {"Workspace ID", "Project ID"}),
+        withFields = Table.AddColumn(
+            source,
+            "Custom Fields",
+            each Clockify.GetList(base, "/workspaces/" & [Workspace ID] & "/projects/" & [Project ID] & "/custom-fields")
+        ),
+        expandedList = Table.ExpandListColumn(withFields, "Custom Fields"),
+        expanded = Table.ExpandRecordColumn(
+            expandedList,
+            "Custom Fields",
+            {"id", "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"},
+            {"Project Custom Field ID", "Project Custom Field Name", "Project Custom Field Description", "Project Custom Field Type", "Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"}
+        )
+    in
+        expanded;
 
-let
-
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-    ],
-    source = Clockify.Workspaces(),
-    #"Custom Fields" = Table.AddColumn(
-        source,
-        "Custom Fields",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/custom-fields?page-size="&pagesize, 
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Custom Fields" = Table.ExpandListColumn(#"Custom Fields", "Custom Fields"),
-    #"Expanded Custom Fields1" = Table.ExpandRecordColumn(#"Expanded Custom Fields", "Custom Fields", {"id",  "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"}, {"Workspace Custom Field ID", "Workspace Custom Field Name", "Workspace Custom Field Description", "Workspace Custom Field Type", "Workspace Custom Field Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"})
-
-in
-
-#"Expanded Custom Fields1";
-
-
-Clockify.CustomFieldsProjects = () =>
-
-let
-
-    apiKey = Extension.CurrentCredential()[Key],
-    headers = [
-        #"X-Api-Key" = apiKey
-        ],
-    source = Clockify.Projects(),
-    selectcolumns = Table.SelectColumns(source,{"Workspace ID", "Project ID"}),
-    #"Custom Fields" = Table.AddColumn(
-        selectcolumns,
-        "Custom Fields",
-        each
-            Json.Document(
-                Web.Contents(
-                    baseurl,
-                    [
-                        RelativePath = "/workspaces/" & [Workspace ID] &"/projects/"&[Project ID]&"/custom-fields?page-size="&pagesize,
-                        Headers = headers,
-                        ManualCredentials = true
-                    ]
-                )
-            )
-            ),
-    #"Expanded Custom Fields Project" = Table.ExpandListColumn(#"Custom Fields", "Custom Fields"),
-    #"Expanded Custom Fields Project1" = Table.ExpandRecordColumn(#"Expanded Custom Fields Project", "Custom Fields", 
-        {"id",  "name", "description", "type", "placeholder", "allowedValues", "workspaceDefaultValue", "onlyAdminCanEdit", "required", "status", "projectDefaultValues"}, 
-        {"Project Custom Field ID",  "Project Custom Field Name", "Project Custom Field Description", "Project Custom Field Type", "Placeholder", "Allowed Values", "Workspace Default Value", "Only Admin Can Edit", "Required", "Status", "Project Default Values"})
-in
-     #"Expanded Custom Fields Project1" ;
-
-
-
-// Data Source Kind description
+//
+// ---------- data source kind + publish ----------
+//
 Clockify = [
-    TestConnection = (dataSourcePath) => {"Clockify.Navigation"},
+    TestConnection = (dataSourcePath) => {"Clockify.Contents"},
     Authentication = [
-         Key = []
+        Key = [KeyLabel = "Clockify API Key"]
     ],
     Label = Extension.LoadString("DataSourceLabel")
 ];
 
-// Data Source UI publishing description
 Clockify.Publish = [
-    Beta = true,
-    Category = "Other",
-    ButtonText = { Extension.LoadString("ButtonTitle"), Extension.LoadString("ButtonHelp") },
-    LearnMoreUrl = "https://powerbi.microsoft.com/",
+    Beta = false,
+    Category = "Online Services",
+    ButtonText = {Extension.LoadString("ButtonTitle"), Extension.LoadString("ButtonHelp")},
+    LearnMoreUrl = "https://www.bibb.pro/post/clockify-power-bi-template",
     SourceImage = Clockify.Icons,
     SourceTypeImage = Clockify.Icons
 ];
 
 Clockify.Icons = [
-    Icon16 = { Extension.Contents("Clockify16.png"), Extension.Contents("Clockify20.png"), Extension.Contents("Clockify24.png"), Extension.Contents("Clockify32.png") },
-    Icon32 = { Extension.Contents("Clockify32.png"), Extension.Contents("Clockify40.png"), Extension.Contents("Clockify48.png"), Extension.Contents("Clockify64.png") }
+    Icon16 = {Extension.Contents("Clockify16.png"), Extension.Contents("Clockify20.png"), Extension.Contents("Clockify24.png"), Extension.Contents("Clockify32.png")},
+    Icon32 = {Extension.Contents("Clockify32.png"), Extension.Contents("Clockify40.png"), Extension.Contents("Clockify48.png"), Extension.Contents("Clockify64.png")}
 ];
 
-//NavTable
-NavTable.to = (
+//
+// ---------- helpers ----------
+//
+Table.ToNavigationTable = (
     table as table,
     keyColumns as list,
     nameColumn as text,
@@ -409,12 +356,11 @@ NavTable.to = (
 ) as table =>
     let
         tableType = Value.Type(table),
-        newTableType = Type.AddTableKey(tableType, keyColumns, true) meta 
-        [
-            NavigationTable.NameColumn = nameColumn, 
+        newTableType = Type.AddTableKey(tableType, keyColumns, true) meta [
+            NavigationTable.NameColumn = nameColumn,
             NavigationTable.DataColumn = dataColumn,
-            NavigationTable.ItemKindColumn = itemKindColumn, 
-            Preview.DelayColumn = itemNameColumn, 
+            NavigationTable.ItemKindColumn = itemKindColumn,
+            Preview.DelayColumn = itemNameColumn,
             NavigationTable.IsLeafColumn = isLeafColumn
         ],
         navigationTable = Value.ReplaceType(table, newTableType)

@@ -1,7 +1,6 @@
-﻿// Use this file to write queries to test your data connector
+// Use this file to write queries to test your data connector
 let
-    result = Clockify.Navigation()
-    //result = Clockify.Users()
-
+    result = Clockify.Contents()
+    // result = Clockify.Contents("https://api.clockify.me/api/v1")
 in
     result
