@@ -330,7 +330,7 @@ Clockify.Publish = [
     Beta = false,
     Category = "Online Services",
     ButtonText = {Extension.LoadString("ButtonTitle"), Extension.LoadString("ButtonHelp")},
-    LearnMoreUrl = "https://bibb.pro/post/clockify-power-bi-template",
+    LearnMoreUrl = "https://bibb.pro/post/connect-clockify-to-power-bi",
     SourceImage = Clockify.Icons,
     SourceTypeImage = Clockify.Icons
 ];
