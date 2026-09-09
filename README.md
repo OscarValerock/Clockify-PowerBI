@@ -1,6 +1,10 @@
 # Clockify - Power BI Integration
 ![](ReadMeImages/CPBI.png)
 
+This repo holds the free Clockify custom connector for Power BI. For the full
+walkthrough, including the two other ways to get Clockify data into Power BI,
+read [Power BI Clockify Integration: Three Patterns That Work](https://bibb.pro/post/clockify-power-bi-template).
+
 ## For inquiries please open an issue:
 https://github.com/OscarValerock/Clockify-PowerBI/issues
 
